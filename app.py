@@ -9,6 +9,7 @@ try:
     reservas = pd.read_csv(archivo_reservas)
 except:
     reservas = pd.DataFrame(columns=["habitacion","fecha","franja"])
+    reservas.to_csv(archivo_reservas, index=False)
 
 st.title("Reserva Lavandería")
 
