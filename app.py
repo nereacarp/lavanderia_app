@@ -76,36 +76,35 @@ if submit:
     reservas["_sem"] = pd.to_datetime(reservas["fecha"]).dt.isocalendar().week
     mismasemana = reservas[(reservas["habitacion"].astype(str)==str(habitacion)) & (reservas["_sem"]==semana_objetivo)]
 
-    # Número de franjas distintas ya reservadas por la habitación en esa semana
-    franjas_distintas = set(zip(mismasemana["fecha"], mismasemana["franja"]))
-    num_franjas_semana = len(franjas_distintas)
+    # Contar reservas totales (cada lavadora cuenta 1) ya hechas por la habitación en esa semana
+    num_reservas_semana = len(mismasemana)
 
-    # Franja actual (fecha+franja) para saber si es nueva franja o misma franja (posible 2ª lavadora)
-    franja_actual = (str(fecha), franja)
-    es_franja_nueva = franja_actual not in franjas_distintas
-
-    # Límite de franjas por semana: 2 si es semana actual, si no 1
-    max_franjas = 2 if semana_objetivo == semana_actual else 1
+    # Límite semanal de reservas: 2 si es semana actual, si no 1
+    max_reservas_semana = 2 if semana_objetivo == semana_actual else 1
 
     # ¿Hay hueco en la franja seleccionada? (menos de 3 máquinas ocupadas)
     cupo = reservas[(reservas["fecha"]==str(fecha)) & (reservas["franja"]==franja)]
     hay_hueco_en_franja = len(cupo) < 3
 
-    # Validación de límite semanal por franja
-    if es_franja_nueva and num_franjas_semana >= max_franjas:
+    # Validación de límite semanal por número de reservas
+    if num_reservas_semana >= max_reservas_semana:
         if semana_objetivo == semana_actual:
-            st.warning(tr("Límite semanal alcanzado para esta semana (máx. 2 franjas).", "Weekly limit reached for this week (max 2 slots)."))
+            st.warning(tr("Has alcanzado las 2 reservas semanales para esta semana.", "You have reached 2 weekly bookings for this week."))
         else:
-            st.warning(tr("Límite semanal alcanzado (máx. 1 franja por semana).", "Weekly limit reached (max 1 slot per week)."))
+            st.warning(tr("Has alcanzado la 1 reserva semanal para la próxima semana.", "You have reached 1 weekly booking for next week."))
     else:
-        # Bloquear múltiples lavadoras para la misma habitación en la misma fecha+franja
+        # Bloquear múltiples lavadoras para la misma habitación en la misma fecha+franja según semana
         misma_franja_habitacion = reservas[
             (reservas["habitacion"].astype(str)==str(habitacion)) &
             (reservas["fecha"]==str(fecha)) &
             (reservas["franja"]==franja)
         ]
-        if len(misma_franja_habitacion) > 0:
-            st.warning(tr("Ya tienes esta franja reservada.", "You already booked this time slot."))
+        limite_lavadoras_misma_franja = 2 if semana_objetivo == semana_actual else 1
+        if len(misma_franja_habitacion) >= limite_lavadoras_misma_franja:
+            if semana_objetivo == semana_actual:
+                st.warning(tr("Ya tienes 2 lavadoras en esta franja.", "You already have 2 washers in this slot."))
+            else:
+                st.warning(tr("En la semana siguiente solo puedes 1 lavadora por franja.", "Next week you can only book 1 washer per slot."))
         else:
             # Validar que la lavadora seleccionada esté libre en esa fecha y franja
             ocupado_maquina = reservas[
