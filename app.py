@@ -3,12 +3,16 @@ import pandas as pd
 from datetime import datetime, timedelta
 
 # ========================
-# Idioma / Language selector
+# Idioma / Language selector (top-right)
 # ========================
 if "lang" not in st.session_state:
     st.session_state["lang"] = "ES"
-lang = st.sidebar.selectbox("Idioma / Language", ["ES", "EN"], index=(0 if st.session_state["lang"]=="ES" else 1))
-st.session_state["lang"] = lang
+
+# Top bar with language toggle on the right
+_top_left, _top_right = st.columns([1, 0.35])
+with _top_right:
+    lang = st.radio("", ["ES", "EN"], index=(0 if st.session_state["lang"]=="ES" else 1), horizontal=True)
+    st.session_state["lang"] = lang
 
 def tr(es_text: str, en_text: str) -> str:
     return es_text if st.session_state.get("lang", "ES") == "ES" else en_text
@@ -167,9 +171,11 @@ def render_semana(fechas_semana, titulo_es, titulo_en):
     dias_nombres = dias_nombres_es if st.session_state["lang"] == "ES" else dias_nombres_en
     dias_labels = [f"{dias_nombres[i]} {fechas_semana[i].day:02d}" for i in range(7)]
     st.subheader(tr(titulo_es, titulo_en))
+
+    # Construir matriz: filas=franjas (índice), columnas=días
     filas = []
     for fr in franjas:
-        fila = {"Franja": fr if st.session_state["lang"]=="ES" else "Slot"}
+        fila = {}
         for idx, f in enumerate(fechas_semana):
             cupo = reservas[(reservas["fecha"]==str(f)) & (reservas["franja"]==fr)]
             por_maquina = {}
@@ -182,8 +188,11 @@ def render_semana(fechas_semana, titulo_es, titulo_en):
             # Forzar multilínea con HTML <br>
             fila[dias_labels[idx]] = "<br>".join([por_maquina[1], por_maquina[2], por_maquina[3]])
         filas.append(fila)
-    df = pd.DataFrame(filas, columns=["Franja" if st.session_state["lang"]=="ES" else "Slot"] + dias_labels)
-    html = df.to_html(escape=False, index=False)
+
+    df = pd.DataFrame(filas, columns=dias_labels)
+    df.index = franjas
+    df.index.name = ""
+    html = df.to_html(escape=False, index=True)
     st.markdown(html, unsafe_allow_html=True)
 
 render_semana(semana1, "Semana actual (L-D)", "Current week (Mon-Sun)")
