@@ -47,10 +47,9 @@ for f in fechas_disponibles:
     fila = {"Fecha": f}
     for fr in franjas:
         cupo = reservas[(reservas["fecha"]==str(f)) & (reservas["franja"]==fr)]
-        # Mostrar los números de habitación ocupando cada hueco, hasta 3
-        ocupacion = cupo["habitacion"].tolist()
+        ocupacion = [str(x) for x in cupo["habitacion"].tolist()]  # convertir a string
         while len(ocupacion) < 3:
-            ocupacion.append("Libre")
+            ocupacion.append("Libre")  # rellenar hasta 3 huecos
         fila[fr] = " | ".join(ocupacion)
     tabla.append(fila)
 
