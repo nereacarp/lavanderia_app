@@ -58,9 +58,16 @@ if admin_pass == "1503004505455":
         borrar_submit = st.form_submit_button("Borrar reserva")
         
         if borrar_submit:
-            mask_mantener = ~((reservas["habitacion"]==habitacion_borrar) &
-                              (reservas["fecha"]==str(fecha_borrar)) &
-                              (reservas["franja"]==franja_borrar))
+            fechas_reservas_date = pd.to_datetime(reservas["fecha"]).dt.date
+            coincide = (
+                reservas["habitacion"].astype(str) == str(habitacion_borrar)
+            ) & (
+                fechas_reservas_date == fecha_borrar
+            ) & (
+                reservas["franja"] == franja_borrar
+            )
+
+            mask_mantener = ~coincide
             nuevas_reservas = reservas[mask_mantener]
             if len(nuevas_reservas) == len(reservas):
                 st.warning("No se encontró esa reserva.")
