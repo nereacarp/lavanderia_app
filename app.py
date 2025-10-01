@@ -39,20 +39,20 @@ if submit:
             reservas.to_csv(archivo_reservas,index=False)
             st.success(f"Turno reservado para {fecha} {franja} ✔️")
 
-# Mostrar calendario visual
-st.subheader("Disponibilidad de los próximos 14 días")
+# Mostrar calendario visual con ocupación por habitación
+st.subheader("Disponibilidad de los próximos 14 días (3 huecos por franja)")
 tabla = []
+
 for f in fechas_disponibles:
     fila = {"Fecha": f}
     for fr in franjas:
         cupo = reservas[(reservas["fecha"]==str(f)) & (reservas["franja"]==fr)]
-        texto = f"{len(cupo)}/3"
-        # Si tu habitación ya tiene turno en esa semana, marcar con *
-        semana_fila = f.isocalendar()[1]
-        if habitacion and ((reservas["habitacion"]==habitacion) & (reservas["semana"]==semana_fila)).any():
-            texto += " *"
-        fila[fr] = texto
+        # Mostrar los números de habitación ocupando cada hueco, hasta 3
+        ocupacion = cupo["habitacion"].tolist()
+        while len(ocupacion) < 3:
+            ocupacion.append("Libre")
+        fila[fr] = " | ".join(ocupacion)
     tabla.append(fila)
 
 st.table(pd.DataFrame(tabla))
-st.caption("* indica que ya tienes un turno esa semana")
+st.caption("Cada franja muestra las 3 máquinas. 'Libre' indica hueco disponible.")
