@@ -25,7 +25,7 @@ st.title("Reserva Lavandería")
 # Normas / Información
 # ========================
 st.subheader("Normas")
-st.markdown("- Solo se puede reservar 1 franja por habitación a la semana (salvo semana actual si quedan huecos).\n- De 00:00 a 08:00 se puede usar sin necesidad de reservar.")
+st.markdown("- Cada habitación puede reservar **solo 1 franja (2 lavadoras)** por semana.  \n- Excepción: en la semana actual, si aún quedan huecos libres, se puede reservar una franja extra de las que quedan libres.  \n- La franja de **00:00 a 08:00** está libre y **no requiere reserva**.")
 
 # ========================
 # Utilidades de semana
@@ -50,19 +50,35 @@ with st.form("reserva_form"):
     submit = st.form_submit_button("Reservar")
 
 if submit:
-    # Validar máximo 1 reserva por semana por habitación con excepción: semana actual si hay huecos
+    # Semana objetivo vs actual
     semana_objetivo = fecha.isocalendar()[1]
     semana_actual = Hoy.isocalendar()[1]
-    reservas_semana = pd.to_datetime(reservas["fecha"]).dt.isocalendar().week
-    habitaciones_str = reservas["habitacion"].astype(str)
-    ya_tiene_semana = ((habitaciones_str==str(habitacion)) & (reservas_semana==semana_objetivo)).any()
+
+    # Subconjunto de reservas de la misma habitación y semana
+    reservas["_sem"] = pd.to_datetime(reservas["fecha"]).dt.isocalendar().week
+    mismasemana = reservas[(reservas["habitacion"].astype(str)==str(habitacion)) & (reservas["_sem"]==semana_objetivo)]
+
+    # Número de franjas distintas ya reservadas por la habitación en esa semana
+    franjas_distintas = set(zip(mismasemana["fecha"], mismasemana["franja"]))
+    num_franjas_semana = len(franjas_distintas)
+
+    # Franja actual (fecha+franja) para saber si es nueva franja o misma franja (posible 2ª lavadora)
+    franja_actual = (str(fecha), franja)
+    es_franja_nueva = franja_actual not in franjas_distintas
+
+    # Límite de franjas por semana: 2 si es semana actual, si no 1
+    max_franjas = 2 if semana_objetivo == semana_actual else 1
 
     # ¿Hay hueco en la franja seleccionada? (menos de 3 máquinas ocupadas)
     cupo = reservas[(reservas["fecha"]==str(fecha)) & (reservas["franja"]==franja)]
     hay_hueco_en_franja = len(cupo) < 3
 
-    if ya_tiene_semana and not (semana_objetivo == semana_actual and hay_hueco_en_franja):
-        st.warning("Ya has reservado lavadora esta semana")
+    # Validación de límite semanal por franja
+    if es_franja_nueva and num_franjas_semana >= max_franjas:
+        if semana_objetivo == semana_actual:
+            st.warning("Límite semanal alcanzado para esta semana (máx. 2 franjas).")
+        else:
+            st.warning("Límite semanal alcanzado (máx. 1 franja por semana).")
     else:
         # Validar que la lavadora seleccionada esté libre en esa fecha y franja
         ocupado_maquina = reservas[
@@ -72,20 +88,22 @@ if submit:
         ]
         if len(ocupado_maquina) > 0:
             st.warning("Esa lavadora ya está reservada en esa franja.")
+        elif not hay_hueco_en_franja:
+            st.warning("Esta franja ya está completa.")
         else:
             nuevas = pd.DataFrame([[habitacion,str(fecha),franja,int(maquina)]], columns=["habitacion","fecha","franja","maquina"])
-            reservas = pd.concat([reservas,nuevas], ignore_index=True)
+            reservas = pd.concat([reservas.drop(columns=["_sem"], errors="ignore"), nuevas], ignore_index=True)
             reservas.to_csv(archivo_reservas,index=False)
             st.success(f"Turno reservado para {fecha} {franja} (Lavadora {maquina}) ✔️")
 
 # ========================
 # Modo administrador
 # ========================
-st.subheader("Modo Administradora")
+st.subheader("Modo Administrador")
 
-admin_pass = st.text_input("Contraseña de administradora", type="password")
+admin_pass = st.text_input("Contraseña de administrador", type="password")
 if admin_pass == "1503004505455":   
-    st.success("Acceso de administradora concedido ✅")
+    st.success("Acceso de administrador concedido ✅")
 
     with st.form("borrar_form"):
         habitacion_borrar = st.text_input("Habitación a borrar")
