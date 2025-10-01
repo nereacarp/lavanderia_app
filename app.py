@@ -124,7 +124,8 @@ else:
 franjas = ["08:00 12:00","12:00 16:00","16:00 20:00","20:00 00:00"]
 
 def render_semana(fechas_semana, titulo):
-    dias_cols = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]
+    dias_nombres = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]
+    dias_labels = [f"{dias_nombres[i]} {fechas_semana[i].day:02d}" for i in range(7)]
     st.subheader(titulo)
     filas = []
     for fr in franjas:
@@ -138,10 +139,12 @@ def render_semana(fechas_semana, titulo):
                     por_maquina[m] = str(res_m.iloc[0]["habitacion"])  # una por máquina
                 else:
                     por_maquina[m] = "Libre"
-            fila[dias_cols[idx]] = f"{por_maquina[1]}\n{por_maquina[2]}\n{por_maquina[3]}"
+            # Forzar multilínea con HTML <br>
+            fila[dias_labels[idx]] = "<br>".join([por_maquina[1], por_maquina[2], por_maquina[3]])
         filas.append(fila)
-    df = pd.DataFrame(filas, columns=["Franja"] + dias_cols)
-    st.dataframe(df.style.set_properties(**{"white-space": "pre-line"}), use_container_width=True)
+    df = pd.DataFrame(filas, columns=["Franja"] + dias_labels)
+    html = df.to_html(escape=False, index=False)
+    st.markdown(html, unsafe_allow_html=True)
 
 render_semana(semana1, "Semana actual (L-D)")
 render_semana(semana2, "Semana siguiente (L-D)")
