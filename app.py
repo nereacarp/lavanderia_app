@@ -138,10 +138,10 @@ def render_semana(fechas_semana, titulo):
                     por_maquina[m] = str(res_m.iloc[0]["habitacion"])  # una por máquina
                 else:
                     por_maquina[m] = "Libre"
-            fila[dias_cols[idx]] = "   ".join([por_maquina[1], por_maquina[2], por_maquina[3]])
+            fila[dias_cols[idx]] = "\n".join([por_maquina[1], por_maquina[2], por_maquina[3]])
         filas.append(fila)
     df = pd.DataFrame(filas, columns=["Franja"] + dias_cols)
-    st.table(df)
+    st.dataframe(df.style.set_properties(**{"white-space": "pre-line"}), use_container_width=True)
 
 render_semana(semana1, "Semana actual (L-D)")
 render_semana(semana2, "Semana siguiente (L-D)")
