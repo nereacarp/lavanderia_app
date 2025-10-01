@@ -44,7 +44,7 @@ fechas_disponibles = semana1 + semana2
 with st.form("reserva_form"):
     habitacion = st.text_input("Número de habitación")
     fecha = st.selectbox("Elige fecha", fechas_disponibles)
-    franjas = ["08:00 12:00","12:00 16:00","16:00 20:00","20:00 00:00"]
+    franjas = ["08:00 - 12:00","12:00 - 16:00","16:00 - 20:00","20:00 - 00:00"]
     franja = st.selectbox("Elige franja", franjas)
     maquina = st.radio("Lavadora", [1, 2, 3], horizontal=True)
     submit = st.form_submit_button("Reservar")
@@ -121,7 +121,7 @@ else:
 # ========================
 # Tablas semanales lunes-domingo (2 semanas)
 # ========================
-franjas = ["08:00 12:00","12:00 16:00","16:00 20:00","20:00 00:00"]
+franjas = ["08:00 - 12:00","12:00 - 16:00","16:00 - 20:00","20:00 - 00:00"]
 
 def render_semana(fechas_semana, titulo):
     dias_nombres = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]
