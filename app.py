@@ -44,7 +44,7 @@ fechas_disponibles = semana1 + semana2
 with st.form("reserva_form"):
     habitacion = st.text_input("Número de habitación")
     fecha = st.selectbox("Elige fecha", fechas_disponibles)
-    franjas = ["08:00-12:00","12:00-16:00","16:00-20:00","20:00-00:00"]
+    franjas = ["08:00 12:00","12:00 16:00","16:00 20:00","20:00 00:00"]
     franja = st.selectbox("Elige franja", franjas)
     maquina = st.radio("Lavadora", [1, 2, 3], horizontal=True)
     submit = st.form_submit_button("Reservar")
@@ -121,7 +121,7 @@ else:
 # ========================
 # Tablas semanales lunes-domingo (2 semanas)
 # ========================
-franjas = ["08:00-12:00","12:00-16:00","16:00-20:00","20:00-00:00"]
+franjas = ["08:00 12:00","12:00 16:00","16:00 20:00","20:00 00:00"]
 
 def render_semana(fechas_semana, titulo):
     dias_cols = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]
@@ -138,7 +138,7 @@ def render_semana(fechas_semana, titulo):
                     por_maquina[m] = str(res_m.iloc[0]["habitacion"])  # una por máquina
                 else:
                     por_maquina[m] = "Libre"
-            fila[dias_cols[idx]] = " | ".join([por_maquina[1], por_maquina[2], por_maquina[3]])
+            fila[dias_cols[idx]] = "   ".join([por_maquina[1], por_maquina[2], por_maquina[3]])
         filas.append(fila)
     df = pd.DataFrame(filas, columns=["Franja"] + dias_cols)
     st.table(df)
