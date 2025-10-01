@@ -98,24 +98,33 @@ if submit:
         else:
             st.warning(tr("Límite semanal alcanzado (máx. 1 franja por semana).", "Weekly limit reached (max 1 slot per week)."))
     else:
-        # Validar que la lavadora seleccionada esté libre en esa fecha y franja
-        ocupado_maquina = reservas[
+        # Bloquear múltiples lavadoras para la misma habitación en la misma fecha+franja
+        misma_franja_habitacion = reservas[
+            (reservas["habitacion"].astype(str)==str(habitacion)) &
             (reservas["fecha"]==str(fecha)) &
-            (reservas["franja"]==franja) &
-            (reservas["maquina"]==int(maquina))
+            (reservas["franja"]==franja)
         ]
-        if len(ocupado_maquina) > 0:
-            st.warning(tr("Esa lavadora ya está reservada en esa franja.", "That washer is already booked for this slot."))
-        elif not hay_hueco_en_franja:
-            st.warning(tr("Esta franja ya está completa.", "This slot is already full."))
+        if len(misma_franja_habitacion) > 0:
+            st.warning(tr("Ya tienes esta franja reservada.", "You already booked this time slot."))
         else:
-            nuevas = pd.DataFrame([[habitacion,str(fecha),franja,int(maquina)]], columns=["habitacion","fecha","franja","maquina"])
-            reservas = pd.concat([reservas.drop(columns=["_sem"], errors="ignore"), nuevas], ignore_index=True)
-            reservas.to_csv(archivo_reservas,index=False)
-            st.success(tr(
-                f"Turno reservado para {fecha} {franja} (Lavadora {maquina}) ✔️",
-                f"Booking confirmed for {fecha} {franja} (Washer {maquina}) ✔️"
-            ))
+            # Validar que la lavadora seleccionada esté libre en esa fecha y franja
+            ocupado_maquina = reservas[
+                (reservas["fecha"]==str(fecha)) &
+                (reservas["franja"]==franja) &
+                (reservas["maquina"]==int(maquina))
+            ]
+            if len(ocupado_maquina) > 0:
+                st.warning(tr("Esa lavadora ya está reservada en esa franja.", "That washer is already booked for this slot."))
+            elif not hay_hueco_en_franja:
+                st.warning(tr("Esta franja ya está completa.", "This slot is already full."))
+            else:
+                nuevas = pd.DataFrame([[habitacion,str(fecha),franja,int(maquina)]], columns=["habitacion","fecha","franja","maquina"])
+                reservas = pd.concat([reservas.drop(columns=["_sem"], errors="ignore"), nuevas], ignore_index=True)
+                reservas.to_csv(archivo_reservas,index=False)
+                st.success(tr(
+                    f"Turno reservado para {fecha} {franja} (Lavadora {maquina}) ✔️",
+                    f"Booking confirmed for {fecha} {franja} (Washer {maquina}) ✔️"
+                ))
 
 # ========================
 # Modo administrador
