@@ -2,6 +2,17 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 
+# ========================
+# Idioma / Language selector
+# ========================
+if "lang" not in st.session_state:
+    st.session_state["lang"] = "ES"
+lang = st.sidebar.selectbox("Idioma / Language", ["ES", "EN"], index=(0 if st.session_state["lang"]=="ES" else 1))
+st.session_state["lang"] = lang
+
+def tr(es_text: str, en_text: str) -> str:
+    return es_text if st.session_state.get("lang", "ES") == "ES" else en_text
+
 archivo_reservas = "reservas.csv"
 
 # Cargar reservas existentes
@@ -19,13 +30,16 @@ if "maquina" not in reservas.columns:
     reservas["maquina"] = 1
     reservas.to_csv(archivo_reservas, index=False)
 
-st.title("Reserva Lavandería")
+st.title(tr("Reserva Lavandería", "Laundry Booking"))
 
 # ========================
 # Normas / Información
 # ========================
-st.subheader("Normas")
-st.markdown("- Cada habitación puede reservar **solo 1 franja (2 lavadoras)** por semana.  \n- Excepción: en la semana actual, si aún quedan huecos libres, se puede reservar una franja extra de las que quedan libres.  \n- La franja de **00:00 a 08:00** está libre y **no requiere reserva**.")
+st.subheader(tr("Normas", "Rules"))
+st.markdown(tr(
+    "- Cada habitación puede reservar **solo 1 franja (2 lavadoras)** por semana.  \n- Excepción: en la semana actual, si aún quedan huecos libres, se puede reservar una franja extra de las que quedan libres.  \n- La franja de **00:00 a 08:00** está libre y **no requiere reserva**.",
+    "- Each room can book **only 1 time slot (max 2 washers)** per week.  \n- Exception: in the current week, if there are free slots left, one extra slot from the remaining free ones can be booked.  \n- The **00:00 to 08:00** time range is free to use and **does not require booking**."
+))
 
 # ========================
 # Utilidades de semana
@@ -42,12 +56,12 @@ fechas_disponibles = semana1 + semana2
 # Formulario de reserva
 # ========================
 with st.form("reserva_form"):
-    habitacion = st.text_input("Número de habitación")
-    fecha = st.selectbox("Elige fecha", fechas_disponibles)
+    habitacion = st.text_input(tr("Número de habitación", "Room number"))
+    fecha = st.selectbox(tr("Elige fecha", "Choose date"), fechas_disponibles)
     franjas = ["08:00 - 12:00","12:00 - 16:00","16:00 - 20:00","20:00 - 00:00"]
-    franja = st.selectbox("Elige franja", franjas)
-    maquina = st.radio("Lavadora", [1, 2, 3], horizontal=True)
-    submit = st.form_submit_button("Reservar")
+    franja = st.selectbox(tr("Elige franja", "Choose time slot"), franjas)
+    maquina = st.radio(tr("Lavadora", "Washer"), [1, 2, 3], horizontal=True)
+    submit = st.form_submit_button(tr("Reservar", "Book"))
 
 if submit:
     # Semana objetivo vs actual
@@ -76,9 +90,9 @@ if submit:
     # Validación de límite semanal por franja
     if es_franja_nueva and num_franjas_semana >= max_franjas:
         if semana_objetivo == semana_actual:
-            st.warning("Límite semanal alcanzado para esta semana (máx. 2 franjas).")
+            st.warning(tr("Límite semanal alcanzado para esta semana (máx. 2 franjas).", "Weekly limit reached for this week (max 2 slots)."))
         else:
-            st.warning("Límite semanal alcanzado (máx. 1 franja por semana).")
+            st.warning(tr("Límite semanal alcanzado (máx. 1 franja por semana).", "Weekly limit reached (max 1 slot per week)."))
     else:
         # Validar que la lavadora seleccionada esté libre en esa fecha y franja
         ocupado_maquina = reservas[
@@ -87,30 +101,33 @@ if submit:
             (reservas["maquina"]==int(maquina))
         ]
         if len(ocupado_maquina) > 0:
-            st.warning("Esa lavadora ya está reservada en esa franja.")
+            st.warning(tr("Esa lavadora ya está reservada en esa franja.", "That washer is already booked for this slot."))
         elif not hay_hueco_en_franja:
-            st.warning("Esta franja ya está completa.")
+            st.warning(tr("Esta franja ya está completa.", "This slot is already full."))
         else:
             nuevas = pd.DataFrame([[habitacion,str(fecha),franja,int(maquina)]], columns=["habitacion","fecha","franja","maquina"])
             reservas = pd.concat([reservas.drop(columns=["_sem"], errors="ignore"), nuevas], ignore_index=True)
             reservas.to_csv(archivo_reservas,index=False)
-            st.success(f"Turno reservado para {fecha} {franja} (Lavadora {maquina}) ✔️")
+            st.success(tr(
+                f"Turno reservado para {fecha} {franja} (Lavadora {maquina}) ✔️",
+                f"Booking confirmed for {fecha} {franja} (Washer {maquina}) ✔️"
+            ))
 
 # ========================
 # Modo administrador
 # ========================
-st.subheader("Modo Administrador")
+st.subheader(tr("Modo Administrador", "Admin Mode"))
 
-admin_pass = st.text_input("Contraseña de administrador", type="password")
+admin_pass = st.text_input(tr("Contraseña de administrador", "Admin password"), type="password")
 if admin_pass == "1503004505455":   
-    st.success("Acceso de administrador concedido ✅")
+    st.success(tr("Acceso de administrador concedido ✅", "Admin access granted ✅"))
 
     with st.form("borrar_form"):
-        habitacion_borrar = st.text_input("Habitación a borrar")
-        fecha_borrar = st.date_input("Fecha a borrar")
-        franja_borrar = st.selectbox("Franja a borrar", franjas)
-        maquina_borrar = st.selectbox("Lavadora a borrar", [1,2,3])
-        borrar_submit = st.form_submit_button("Borrar reserva")
+        habitacion_borrar = st.text_input(tr("Habitación a borrar", "Room to delete"))
+        fecha_borrar = st.date_input(tr("Fecha a borrar", "Date to delete"))
+        franja_borrar = st.selectbox(tr("Franja a borrar", "Time slot to delete"), franjas)
+        maquina_borrar = st.selectbox(tr("Lavadora a borrar", "Washer to delete"), [1,2,3])
+        borrar_submit = st.form_submit_button(tr("Borrar reserva", "Delete booking"))
         
         if borrar_submit:
             fechas_reservas_date = pd.to_datetime(reservas["fecha"]).dt.date
@@ -127,27 +144,32 @@ if admin_pass == "1503004505455":
             mask_mantener = ~coincide
             nuevas_reservas = reservas[mask_mantener]
             if len(nuevas_reservas) == len(reservas):
-                st.warning("No se encontró esa reserva.")
+                st.warning(tr("No se encontró esa reserva.", "Reservation not found."))
             else:
                 reservas = nuevas_reservas
                 reservas.to_csv(archivo_reservas,index=False)
-                st.success(f"Reserva de habitación {habitacion_borrar} eliminada ✅")
+                st.success(tr(
+                    f"Reserva de habitación {habitacion_borrar} eliminada ✅",
+                    f"Room {habitacion_borrar} reservation deleted ✅"
+                ))
 else:
     if admin_pass:
-        st.error("Contraseña incorrecta ❌")
+        st.error(tr("Contraseña incorrecta ❌", "Incorrect password ❌"))
 
 # ========================
 # Tablas semanales lunes-domingo (2 semanas)
 # ========================
 franjas = ["08:00 - 12:00","12:00 - 16:00","16:00 - 20:00","20:00 - 00:00"]
 
-def render_semana(fechas_semana, titulo):
-    dias_nombres = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]
+def render_semana(fechas_semana, titulo_es, titulo_en):
+    dias_nombres_es = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"]
+    dias_nombres_en = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]
+    dias_nombres = dias_nombres_es if st.session_state["lang"] == "ES" else dias_nombres_en
     dias_labels = [f"{dias_nombres[i]} {fechas_semana[i].day:02d}" for i in range(7)]
-    st.subheader(titulo)
+    st.subheader(tr(titulo_es, titulo_en))
     filas = []
     for fr in franjas:
-        fila = {"Franja": fr}
+        fila = {"Franja": fr if st.session_state["lang"]=="ES" else "Slot"}
         for idx, f in enumerate(fechas_semana):
             cupo = reservas[(reservas["fecha"]==str(f)) & (reservas["franja"]==fr)]
             por_maquina = {}
@@ -156,13 +178,13 @@ def render_semana(fechas_semana, titulo):
                 if len(res_m) > 0:
                     por_maquina[m] = str(res_m.iloc[0]["habitacion"])  # una por máquina
                 else:
-                    por_maquina[m] = "Libre"
+                    por_maquina[m] = tr("Libre", "Free")
             # Forzar multilínea con HTML <br>
             fila[dias_labels[idx]] = "<br>".join([por_maquina[1], por_maquina[2], por_maquina[3]])
         filas.append(fila)
-    df = pd.DataFrame(filas, columns=["Franja"] + dias_labels)
+    df = pd.DataFrame(filas, columns=["Franja" if st.session_state["lang"]=="ES" else "Slot"] + dias_labels)
     html = df.to_html(escape=False, index=False)
     st.markdown(html, unsafe_allow_html=True)
 
-render_semana(semana1, "Semana actual (L-D)")
-render_semana(semana2, "Semana siguiente (L-D)")
+render_semana(semana1, "Semana actual (L-D)", "Current week (Mon-Sun)")
+render_semana(semana2, "Semana siguiente (L-D)", "Next week (Mon-Sun)")
